@@ -89,6 +89,9 @@ void* sw_shm_realloc(void *ptr, size_t new_size)
     }
 }
 
+/*
+ * mmap方式创建内存映射方式的共享内存
+ */
 void *swShareMemory_mmap_create(swShareMemory *object, int size, char *mapfile)
 {
     void *mem;
