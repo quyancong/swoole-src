@@ -68,3 +68,13 @@ modules/*
 examples/c_module/.cproject
 examples/c_module/.project
 /ide_helper/output/
+configurations.xml
+Default-build.log
+Default-exec.log
+c_standard_headers_indexer.c
+cpp_standard_headers_indexer.cpp
+launcher.properties
+private.xml
+g++.exe
+gcc.exe
+project.xml

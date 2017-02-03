@@ -149,29 +149,42 @@ void *swShareMemory_mmap_create(swShareMemory *object, int size, char *mapfile)
         return mem; //当前函数返回创建映射区的内存起始地址
     }
 }
-
+/**
+ * 解除mmap内存映射
+ * @param object  要解除内存映射的swShareMemory结构体变量指针
+ * @return 
+ */
 int swShareMemory_mmap_free(swShareMemory *object)
 {
+    //int munmap(void *start,size_t length); 成功返回0，失败返回-1
     return munmap(object->mem, object->size);
 }
 
+/**
+ * sysv系统v方式创建共享内存（基于shm）
+ * @param object    swShareMemory结构体变量指针(mmap和sysv 共用了同一个结构体)
+ * @param size      新建的共享内存大小，以字节为单位
+ * @param key       一般是通过 ftok()获得这个key（大于0的32位整数）。如果key等于0 即key等于IPC_PRIVATE，则只用于有亲缘关系进程共享内存。
+ * @return   成功返回连接好的共享内存地址。失败返回NULL
+ */
 void *swShareMemory_sysv_create(swShareMemory *object, int size, int key)
 {
     int shmid;
     void *mem;
-    bzero(object, sizeof(swShareMemory));
+    bzero(object, sizeof(swShareMemory));//void bzero(void *s,int n);将参数s 所指的内存区域前n 个字节，全部设为零值。相当于调用memset(（void *）s,0,size_t n);推荐使用memset替代bzero。
 
-    if (key == 0)
+    if (key == 0)//有亲缘关系进程使用
     {
         key = IPC_PRIVATE;
     }
     //SHM_R | SHM_W |
-    if ((shmid = shmget(key, size, IPC_CREAT)) < 0)
+    if ((shmid = shmget(key, size, IPC_CREAT)) < 0)   //得到一个共享内存标识符或创建一个共享内存对象并返回共享内存标识符
     {
         swWarn("shmget() failed. Error: %s[%d]", strerror(errno), errno);
         return NULL;
     }
-    if ((mem = shmat(shmid, NULL, 0)) < 0)
+    //void *shmat(int shmid, const void *shmaddr, int shmflg)。   shmid 共享内存标识符; shmaddr 指定共享内存出现在进程内存地址的什么位置，直接指定为NULL让内核自己决定一个合适的地址位置; shmflg SHM_RDONLY：为只读模式，默认0：可读可写
+    if ((mem = shmat(shmid, NULL, 0)) < 0) //连接共享内存标识符为shmid的共享内存，连接成功后把共享内存区对象映射到调用进程的地址空间，随后可像本地空间一样访问.
     {
         swWarn("shmat() failed. Error: %s[%d]", strerror(errno), errno);
         return NULL;
@@ -186,13 +199,19 @@ void *swShareMemory_sysv_create(swShareMemory *object, int size, int key)
     }
 }
 
+/**
+ * 断开sysv共享内存连接（可指定删除这块共享内存）
+ * @param object  swShareMemory结构体变量指针(mmap和sysv 共用了同一个结构体)
+ * @param rm 是否删除共享内存，1则删除
+ * @return  成功0，失败-1
+ */
 int swShareMemory_sysv_free(swShareMemory *object, int rm)
 {
     int shmid = object->shmid;
-    int ret = shmdt(object->mem);
+    int ret = shmdt(object->mem);//将先前用shmat函数连接（attach）好的共享内存脱离（detach）目前的进程
     if (rm == 1)
     {
-        shmctl(shmid, IPC_RMID, NULL);
+        shmctl(shmid, IPC_RMID, NULL);//通过共享内存标识符控制共享内存。第二个参数IPC_RMID：删除这片共享内存。
     }
-    return ret;
+    return ret;//成功0，失败-1
 }
