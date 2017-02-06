@@ -847,6 +847,7 @@ typedef struct _swCond
 
 #define SW_SHM_MMAP_FILE_LEN  64
 
+//共享内存结构体
 typedef struct _swShareMemory_mmap
 {
     int size;
@@ -863,6 +864,7 @@ int swShareMemory_sysv_free(swShareMemory *object, int rm);
 int swShareMemory_mmap_free(swShareMemory *object);
 
 //-------------------memory manager-------------------------
+//内存池结构体（可理解为基类）
 typedef struct _swMemoryPool
 {
 	void *object;
@@ -871,42 +873,44 @@ typedef struct _swMemoryPool
 	void (*destroy)(struct _swMemoryPool *pool);
 } swMemoryPool;
 
+//FixedPool内存池类型的一个内存块结构体（每个slice为一个链表节点）。多个内存块形成一个双向链表
 typedef struct _swFixedPool_slice
 {
     uint8_t lock;
     struct _swFixedPool_slice *next;
     struct _swFixedPool_slice *pre;
-    char data[0];
+    char data[0];       //零长度数组（http://blog.csdn.net/liuaigui/article/details/3680404）。这样我们就可以用 swFixedPool_slice->data 来访问结构体swFixedPool_slice随后的空间数据，非常方便。当然，我们可以使用指针来达到这样的目的。
 
 } swFixedPool_slice;
 
+//内存池结构体。（可理解为swMemoryPool的子类）
 typedef struct _swFixedPool
 {
-    void *memory;
-    size_t size;
+    void *memory;//内存指针。指向一块内存池空间
+    size_t size;//内存池空间的大小
 
-    swFixedPool_slice *head;
-    swFixedPool_slice *tail;
+    swFixedPool_slice *head;//指向头部内存块节点
+    swFixedPool_slice *tail;//指向尾部内存块节点
 
     /**
      * total memory size
      */
-    uint32_t slice_num;
+    uint32_t slice_num;//内存块节点数量
 
     /**
      * memory usage
      */
-    uint32_t slice_use;
+    uint32_t slice_use;//已经使用的内存块节点数量
 
     /**
      * Fixed slice size, not include the memory used by swFixedPool_slice
      */
-    uint32_t slice_size;
+    uint32_t slice_size;//单个内存块节点的大小。不包括内存块结构体实例的大小。
 
     /**
      * use shared memory
      */
-    uint8_t shared;
+    uint8_t shared;//是否共享内存
 
 } swFixedPool;
 /**

@@ -17,12 +17,17 @@
 #include "swoole.h"
 #include <sys/shm.h>
 
+/**
+ * 分配size大小的共享内存
+ * @param size  要分配的共享内存的大小
+ * @return  成功则返回分配的共享内存的首地址
+ */
 void* sw_shm_malloc(size_t size)
 {
     swShareMemory object;
     void *mem;
     //object对象需要保存在头部
-    size += sizeof(swShareMemory);
+    size += sizeof(swShareMemory);//实际分配的内存空间大小包括申请的共享内存大小加上共享内存结构体实例的大小
     mem = swShareMemory_mmap_create(&object, size, NULL);
     if (mem == NULL)
     {
@@ -30,8 +35,8 @@ void* sw_shm_malloc(size_t size)
     }
     else
     {
-        memcpy(mem, &object, sizeof(swShareMemory));
-        return mem + sizeof(swShareMemory);
+        memcpy(mem, &object, sizeof(swShareMemory));//共享内存结构体实例放在分配的共享内存的前面。此处要注意 object->mem是指向的自己的开始地址？
+        return mem + sizeof(swShareMemory);//返回分配的共享内存的开始地址（不包括共享内存结构体实例本身，是一个空内存）。
     }
 }
 
